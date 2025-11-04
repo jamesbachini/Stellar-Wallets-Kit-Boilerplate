@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Stellar Wallets Kit Demo</title>
+  <script src="https://cdn.jsdelivr.net/npm/@stellar/stellar-sdk@14.2.0/dist/stellar-sdk.min.js"></script>
+  <script src="./stellar-kit-bundle/dist/wallet-kit-bundle.umd.js"></script>
+</head>
+<body>
+  <div class="App-header">
+    <div id="walletAddress">Disconnected</div>
+    <div id="buttonWrapper"></div>
+    <button id="sendTxBtn">Send Test Tx</button>
+    <div id="explorerLink"></div>
+  </div>
+
+  <script type="module">
+    const { StellarWalletsKit, KitEventType, SwkAppDarkTheme, defaultModules } = window.MyWalletKit;
+    StellarWalletsKit.init({
+      theme: SwkAppDarkTheme,
+      modules: defaultModules(),
+    });
+    const walletAddressEl = document.getElementById('walletAddress');
+    const buttonWrapper = document.getElementById('buttonWrapper');
+    const explorerLinkEl = document.getElementById('explorerLink');
+    const sendTxBtn = document.getElementById('sendTxBtn');
+    StellarWalletsKit.createButton(buttonWrapper);
+    StellarWalletsKit.on(KitEventType.STATE_UPDATED, event => {
+      walletAddressEl.textContent = event.payload.address || 'Disconnected';
+    });
+
+    sendTxBtn.addEventListener('click', async () => {
+      try {
+        const DESTINATION_ADDRESS = 'GB5AT3W7YT5OOF7HFDIFRM6AS2HXQF7QOL47ZHMGETN4P63476Z6DQ43';
+        const { address } = await StellarWalletsKit.getAddress();
+        const server = new StellarSdk.Horizon.Server('https://horizon-testnet.stellar.org');
+        const sourceAccount = await server.loadAccount(address);
+        const transaction = new StellarSdk.TransactionBuilder(sourceAccount, {
+          fee: StellarSdk.BASE_FEE,
+          networkPassphrase: StellarSdk.Networks.TESTNET
+        })
+          .addOperation(StellarSdk.Operation.payment({
+            destination: DESTINATION_ADDRESS,
+            asset: StellarSdk.Asset.native(),
+            amount: '1'
+          }))
+          .setTimeout(180)
+          .build();
+        const { signedTxXdr } = await StellarWalletsKit.signTransaction(transaction.toXDR(), {
+          networkPassphrase: StellarSdk.Networks.TESTNET,
+          address,
+        });
+        const transactionToSubmit = StellarSdk.TransactionBuilder.fromXDR(
+          signedTxXdr,
+          StellarSdk.Networks.TESTNET
+        );
+        const response = await server.submitTransaction(transactionToSubmit);
+        const explorerUrl = `https://stellar.expert/explorer/testnet/tx/${response.hash}`;
+        explorerLinkEl.innerHTML = `<a href="${explorerUrl}" target="_blank">${explorerUrl}</a>`;
+        alert('Transaction sent successfully!');
+      } catch (err) {
+        console.error('Transaction failed:', err);
+        alert('Transaction failed: ' + (err.message || err));
+      }
+    });
+  </script>
+
+  <style>
+    body { font-family: Arial; background: #0d1117; color: #f0f6fc; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    .App-header { text-align: center; padding: 20px; border-radius: 12px; background-color: #161b22; }
+    button { background-color: #238636; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin-top: 15px; }
+    button:hover { background-color: #2ea043; }
+    a { color: #58a6ff; word-break: break-all; }
+  </style>
+</body>
+</html>
