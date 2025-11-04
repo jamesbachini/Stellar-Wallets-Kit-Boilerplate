@@ -1,8 +1,11 @@
 # Stellar Wallet Kit Boilerplate
 
-A boilerplate for @CreitTech's Stellar Wallet Kit:
+Boilerplate code with simple connection and transaction signing for both React and Vanilla Javascript.
 
-For both React and Vanilla Javascript
+Demo: https://jamesbachini.github.io/Stellar-Wallets-Kit-Boilerplate/vanilla/index.html
+
+A boilerplate for @CreitTech's Stellar Wallet Kit: https://github.com/Creit-Tech/Stellar-Wallets-Kit
+
 
 tl;dr, just include:
 
